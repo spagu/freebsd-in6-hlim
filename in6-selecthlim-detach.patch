@@ -1,0 +1,50 @@
+--- a/sys/netinet6/in6_src.c
++++ b/sys/netinet6/in6_src.c
+@@ -856,6 +856,23 @@
+ }
+ 
+ /*
++ * Hop limit configured on ifp, or the system default when ifp is being
++ * detached.  if_detach() clears if_afdata[AF_INET6] before it waits for
++ * the net epoch and frees the data, so a nexthop looked up under the epoch
++ * may still point at an interface without IPv6 data (PR 279653; seen with
++ * a TCP retransmit timer firing while iwlwifi(4) detached after a firmware
++ * crash).  A NULL check is enough: the data is not freed within the epoch.
++ */
++static int
++in6_ifhlim(struct ifnet *ifp)
++{
++	struct in6_ifextra *ext;
++
++	ext = if_getafdata(ifp, AF_INET6);
++	return (ext != NULL ? ext->nd_ifinfo->chlim : V_ip6_defhlim);
++}
++
++/*
+  * Default hop limit selection. The precedence is as follows:
+  * 1. Hoplimit value specified via ioctl.
+  * 2. (If the outgoing interface is detected) the current
+@@ -869,20 +886,17 @@
+ 	if (inp && inp->in6p_hops >= 0)
+ 		return (inp->in6p_hops);
+ 	else if (ifp)
+-		return (ND_IFINFO(ifp)->chlim);
++		return (in6_ifhlim(ifp));
+ 	else if (inp && !IN6_IS_ADDR_UNSPECIFIED(&inp->in6p_faddr)) {
+ 		struct nhop_object *nh;
+ 		struct in6_addr dst;
+ 		uint32_t fibnum, scopeid;
+-		int hlim;
+ 
+ 		fibnum = inp->inp_inc.inc_fibnum;
+ 		in6_splitscope(&inp->in6p_faddr, &dst, &scopeid);
+ 		nh = fib6_lookup(fibnum, &dst, scopeid, 0, 0);
+-		if (nh != NULL) {
+-			hlim = ND_IFINFO(nh->nh_ifp)->chlim;
+-			return (hlim);
+-		}
++		if (nh != NULL)
++			return (in6_ifhlim(nh->nh_ifp));
+ 	}
+ 	return (V_ip6_defhlim);
+ }
