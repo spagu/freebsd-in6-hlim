@@ -30,6 +30,12 @@ Upstream, `main` fixes the race by reworking how IPv6 data is attached to an
 interface (D54728 and the revisions it depends on), which does not apply to
 stable/15.
 
+## Status
+
+The patch applies cleanly to 15.1-p6 `/usr/src` and compiles with the kernel's own flags (`-Werror`). It has not run yet, so it is not proven to fix anything: the panic needs the Wi-Fi firmware to crash while a TCP retransmit timer is pending, which does not happen on demand.
+
+Article: https://tradik.com/blog/freebsd-in6-selecthlim-iwlwifi-panic/
+
 ## Use
 
 ```sh
