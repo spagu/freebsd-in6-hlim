@@ -26,9 +26,9 @@ when it is NULL. Both branches of `in6_selecthlim()` use it. A NULL check is
 enough because the data is not freed while the caller is in the net epoch,
 which is exactly what the `XXXZL` comment in `if_detach_internal()` relies on.
 
-Upstream, `main` fixes the race by reworking how IPv6 data is attached to an
-interface (D54728 and the revisions it depends on), which does not apply to
-stable/15.
+The bug is still open upstream. The fix proposed for `main` (D54728 and the
+revisions it depends on) reworks how IPv6 data hangs off an interface and
+does not apply to stable/15.
 
 ## Status
 
